@@ -152,7 +152,7 @@ void loop()
 
   switch(actualHour)
   {
-    case 0: for(int i=30; i<37; i++)  {pixels.setPixelColor(i, pixels.Color(0, 0, 0));} break;
+    case 0: for(int i=30; i<38; i++)  {pixels.setPixelColor(i, pixels.Color(0, 0, 0));} break;
     
     case 1: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  break;
     
@@ -276,7 +276,7 @@ void loop()
 
   switch(actualMinute)
   {
-    case 0:   for(int i=15; i<29; i++)  {pixels.setPixelColor(i, pixels.Color(0, 0, 0));} break;
+    case 0:   for(int i=15; i<30; i++)  {pixels.setPixelColor(i, pixels.Color(0, 0, 0));} break;
     
     case 1: pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
     
