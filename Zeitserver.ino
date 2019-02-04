@@ -1,7 +1,7 @@
 /*  
  *  © Felix Geiger, 2018
  *  
- *    Die Stellen, an denen etwas geändert werden kann, sind in den ersten 40 Zeilen mit einem 
+ *    Die Stellen, an denen etwas geändert werden darf, sind nur in den ersten 50 Zeilen UND mit einem 
  *    
  *        //
  *        
@@ -46,6 +46,10 @@ byte lastMinute=25;
 int relay=15;
 int einzeit=6;  //Uhrzeit, bei der das Bosch-Schild einschaltet (Stunde)
 int auszeit=20; //Uhrzeit, bei der das Bosch-Schild ausschaltet (Stunde)
+
+
+/*-----------Bitte ab hier nichts mehr ändern, da änderungen Probleme verursachen können-----------*/
+
 
 void setup() 
 {
@@ -143,10 +147,25 @@ void loop()
   }
   lastMinute=actualMinute;
 
+
+  //Zählt 2 Minuten weiter, da der Zeitserver 2 Minuten nachgeht
+  actualMinute+=2;
+  if(actualMinute > 59)
+  {
+    actualMinute-=60;
+    actualHour++;
+    if(actualHour > 23)
+    {
+      actualHour=0;
+    }
+  }
+
+  //Uhrzeitausgabe am Seriellen Monitor (wenns ned richtig funktioniert: Hilfe beim suchen eines Fehlers)
   Serial.print(actualHour);
   Serial.print(":");
   Serial.println(actualMinute);
 
+  //Uhrzeitanzeige an den LEDs (also an der Uhr)
   haus();
   minaus();
 
@@ -808,6 +827,7 @@ void loop()
 
   delay(sectime);
 
+  //Sekundenanzeige
   for(int i=0; i<15;i++)
   {
     pixels.setPixelColor(i, pixels.Color(rotgd, gruengd, blaugd));
