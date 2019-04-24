@@ -7,7 +7,7 @@
  *        
  *    und einer kurzen Info gekennzeichnet.
  */
- #include <NTPtimeESP.h>
+#include <NTPtimeESP.h>
 #include <WiFi.h>
 #include <Adafruit_NeoPixel.h>
 
@@ -40,7 +40,6 @@ int blaut=180;   //
 
 byte actualHour;
 byte actualMinute;
-
 byte lastMinute=25;
 
 int relay=15;
@@ -48,8 +47,12 @@ int einzeit=6;  //Uhrzeit, bei der das Bosch-Schild einschaltet (Stunde)
 int auszeit=20; //Uhrzeit, bei der das Bosch-Schild ausschaltet (Stunde)
 
 
-/*-----------Bitte ab hier nichts mehr ändern, da änderungen Probleme verursachen können-----------*/
+/*-----------Bitte ab hier nichts mehr ändern, da Änderungen Probleme verursachen können-----------*/
 
+byte altmin;
+
+int resetvar=0;
+int wlan=0;
 
 void setup() 
 {
@@ -62,8 +65,17 @@ void setup()
   WiFi.begin(ssid, password);
   while(WiFi.status() != WL_CONNECTED)
   {
-    Serial.println("Attempting to connect...");
-    delay(1000);
+    if(wlan<15)
+    {
+      Serial.println("Attempting to connect...");
+      delay(1000);
+      wlan++;
+    }
+    else
+    {
+      Serial.println("Restart, da kein W-LAN Verbindung möglich");
+      ESP.restart();
+    }
   }
   Serial.println("Connected to Wi-Fi network");
 
@@ -90,6 +102,374 @@ void setup()
   
   byte actualHour = dateTime.hour;
   byte actualMinute = dateTime.minute;
+}
+
+void loop() 
+{
+  for(int i=0; i<15;i++)
+  {
+    pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+  }
+  
+  dateTime = NTPch.getNTPtime(1.0, 1);
+  
+  byte actualHour = dateTime.hour;
+  byte actualMinute = dateTime.minute;
+
+  if(actualMinute==altmin)
+  {
+    actualMinute++;
+    if(actualMinute>=60)
+    {
+      actualMinute-=60;
+      actualHour++;
+      if(actualHour>=24)
+      {
+        actualHour-=24;
+      }
+    }
+  }
+  else
+  {
+    altmin=actualMinute;
+  }
+
+  //Uhrzeitausgabe am Seriellen Monitor (wenns ned richtig funktioniert: Hilfe beim suchen eines Fehlers)
+  Serial.print(actualHour);
+  Serial.print(":");
+  Serial.println(actualMinute);
+
+  //Uhrzeitanzeige an den LEDs (also an der Uhr)
+  setzen(15, 37, 0, 0, 0);  //alle Minuten- und Stunden-LEDs aus
+
+  switch(actualHour)
+  {
+    case 0: 
+      setzen(30, 37, 0, 0, 0);
+      break;
+    case 1: 
+      if(resetvar==1)
+      {
+        resetvar=0;
+        ESP.restart();
+      }
+      setzen(30, 30, rott, gruent, blaut);
+      break;
+    case 2: 
+      setzen(30, 31, rott, gruent, blaut);
+      break;
+    case 3: 
+      setzen(30, 32, rott, gruent, blaut);
+      break;
+    case 4: 
+      setzen(30, 33, rott, gruent, blaut);
+      break;
+    case 5: 
+      setzen(34, 34, rott, gruent, blaut);
+      break;
+    case 6: 
+      setzen(30, 30, rott, gruent, blaut);
+      setzen(34, 34, rott, gruent, blaut);
+      break;
+    case 7: 
+      setzen(30, 31, rott, gruent, blaut);
+      setzen(34, 34, rott, gruent, blaut);
+      break;
+    case 8: 
+      setzen(30, 32, rott, gruent, blaut);
+      setzen(34, 34, rott, gruent, blaut);
+      break;
+    case 9: 
+      setzen(30, 34, rott, gruent, blaut);
+      break;
+    case 10: 
+      setzen(34, 35, rott, gruent, blaut);
+      break;
+    case 11: 
+      setzen(30, 30, rott, gruent, blaut);
+      setzen(34, 35, rott, gruent, blaut);
+      break;
+    case 12:  
+      resetvar=1;
+      setzen(30, 31, rott, gruent, blaut);
+      setzen(34, 35, rott, gruent, blaut);
+      break;
+    case 13:  
+      setzen(30, 32, rott, gruent, blaut);
+      setzen(34, 35, rott, gruent, blaut);
+      break;
+    case 14:  
+      setzen(30, 35, rott, gruent, blaut);
+      break;
+    case 15:  
+      setzen(34, 36, rott, gruent, blaut);
+      break;
+    case 16:  
+      setzen(30, 30, rott, gruent, blaut);
+      setzen(34, 36, rott, gruent, blaut);
+      break;
+    case 17:   
+      setzen(30, 31, rott, gruent, blaut);
+      setzen(34, 36, rott, gruent, blaut);
+      break;
+    case 18:   
+      setzen(30, 32, rott, gruent, blaut);
+      setzen(34, 36, rott, gruent, blaut);
+      break;
+    case 19:   
+      setzen(30, 36, rott, gruent, blaut);
+      break;
+    case 20:  
+      setzen(34, 37, rott, gruent, blaut);
+      break;
+    case 21:   
+      setzen(30, 30, rott, gruent, blaut);
+      setzen(34, 37, rott, gruent, blaut);
+      break;
+    case 22:   
+      setzen(30, 31, rott, gruent, blaut);
+      setzen(34, 37, rott, gruent, blaut);
+      break;
+    case 23:   
+      setzen(30, 32, rott, gruent, blaut);
+      setzen(34, 37, rott, gruent, blaut);
+      break;
+  }
+
+  switch(actualMinute)
+  {
+    case 0:
+      setzen(15, 29, 0, 0, 0);
+      break;
+    case 1: 
+      setzen(15, 15, rot, gruen, blau);
+      break;
+    case 2: 
+      setzen(15, 16, rot, gruen, blau);
+      break;
+    case 3: 
+      setzen(15, 17, rot, gruen, blau);
+      break;
+    case 4:
+      setzen(15, 18, rot, gruen, blau);
+      break;
+    case 5: 
+      setzen(19, 19, rot, gruen, blau);
+      break;
+    case 6: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 19, rot, gruen, blau);
+      break;
+    case 7:
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 19, rot, gruen, blau);
+      break;
+    case 8:
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 19, rot, gruen, blau);
+      break;
+    case 9: 
+      setzen(15, 19, rot, gruen, blau);
+      break;
+    case 10: 
+      setzen(19, 20, rot, gruen, blau);
+      break;
+    case 11: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 20, rot, gruen, blau);
+      break;
+    case 12:
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 20, rot, gruen, blau);
+      break;
+    case 13: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 20, rot, gruen, blau);
+      break;
+    case 14: 
+      setzen(15, 20, rot, gruen, blau);
+      break;
+    case 15: 
+      setzen(19, 21, rot, gruen, blau);
+      break;
+    case 16: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 21, rot, gruen, blau);
+      break;
+    case 17: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 21, rot, gruen, blau);
+      break;
+    case 18: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 21, rot, gruen, blau);
+      break;
+    case 19: 
+      setzen(15, 21, rot, gruen, blau);
+      break;
+    case 20: 
+      setzen(19, 22, rot, gruen, blau);
+      break;
+    case 21: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 22, rot, gruen, blau);
+      break;
+    case 22: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 22, rot, gruen, blau);
+      break;
+    case 23: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 22, rot, gruen, blau);
+      break;
+    case 24: 
+      setzen(15, 22, rot, gruen, blau);
+      break;
+    case 25: 
+      setzen(19, 23, rot, gruen, blau);
+      break;
+    case 26: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 23, rot, gruen, blau);
+      break;
+    case 27: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 23, rot, gruen, blau);
+      break;
+    case 28: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 23, rot, gruen, blau);
+      break;
+    case 29: 
+      setzen(15, 23, rot, gruen, blau);
+      break;
+    case 30: 
+      setzen(19, 24, rot, gruen, blau);
+      break;
+    case 31: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 24, rot, gruen, blau);
+      break;
+    case 32: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 24, rot, gruen, blau);
+      break;
+    case 33: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 24, rot, gruen, blau);
+      break;
+    case 34: 
+      setzen(15, 24, rot, gruen, blau);
+      break;
+    case 35: 
+      setzen(19, 25, rot, gruen, blau);
+      break;
+    case 36: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 25, rot, gruen, blau);
+      break;
+    case 37: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 25, rot, gruen, blau);
+      break;
+    case 38: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 25, rot, gruen, blau);
+      break;
+    case 39: 
+      setzen(15, 25, rot, gruen, blau);
+      break;
+    case 40: 
+      setzen(19, 26, rot, gruen, blau);
+      break;
+    case 41: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 26, rot, gruen, blau);
+      break;
+    case 42: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 26, rot, gruen, blau);
+      break;
+    case 43: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 26, rot, gruen, blau);
+      break;
+    case 44: 
+      setzen(15, 26, rot, gruen, blau);
+      break;
+    case 45: 
+      setzen(19, 27, rot, gruen, blau);
+      break;
+    case 46: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 27, rot, gruen, blau);
+      break;
+    case 47: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 27, rot, gruen, blau);
+      break;
+    case 48: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 27, rot, gruen, blau);
+      break;
+    case 49: 
+      setzen(15, 27, rot, gruen, blau);
+      break;
+    case 50: 
+      setzen(19, 28, rot, gruen, blau);
+      break;
+    case 51: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 28, rot, gruen, blau);
+      break;
+    case 52: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 28, rot, gruen, blau);
+      break;
+    case 53: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 28, rot, gruen, blau);
+      break;
+    case 54: 
+      setzen(15, 28, rot, gruen, blau);
+      break;
+    case 55: 
+      setzen(19, 29, rot, gruen, blau);
+      break;
+    case 56: 
+      setzen(15, 15, rot, gruen, blau);
+      setzen(19, 29, rot, gruen, blau);
+      break;
+    case 57: 
+      setzen(15, 16, rot, gruen, blau);
+      setzen(19, 29, rot, gruen, blau);
+      break;
+    case 58: 
+      setzen(15, 17, rot, gruen, blau);
+      setzen(19, 29, rot, gruen, blau);
+      break;
+    case 59: 
+      setzen(15, 29, rot, gruen, blau);
+      break;
+  }
+
+  portDISABLE_INTERRUPTS();
+  pixels.show();
+  portENABLE_INTERRUPTS();
+
+  boschschild();
+
+  delay(sectime);
+
+  //Sekundenanzeige
+  for(int i=0; i<15;i++)
+  {
+    pixels.setPixelColor(i, pixels.Color(rotgd, gruengd, blaugd));
+    portDISABLE_INTERRUPTS();
+    pixels.show();
+    portENABLE_INTERRUPTS();
+    delay(sectime);
+  }
 }
 
 void boschschild()
@@ -120,720 +500,10 @@ void minaus()
   }
 }
 
-void loop() 
+void setzen(int startpix, int stoppix, int rwert, int gwert, int bwert)
 {
-  for(int i=0; i<15;i++)
+  for(int ilauf=startpix; ilauf<=stoppix; ilauf++)
   {
-    pixels.setPixelColor(i, pixels.Color(0, 0, 0));
-  }
-  
-  dateTime = NTPch.getNTPtime(1.0, 1);
-  
-  byte actualHour = dateTime.hour;
-  byte actualMinute = dateTime.minute;
-
-  if(actualMinute==lastMinute)
-  {
-    actualMinute++;
-    if(actualMinute > 59)
-    {
-      actualMinute=0;
-      actualHour++;
-      if(actualHour > 23)
-      {
-        actualHour=0;
-      }
-    }
-  }
-  lastMinute=actualMinute;
-
-
-  //Zählt 2 Minuten weiter, da der Zeitserver 2 Minuten nachgeht
-  actualMinute+=2;
-  if(actualMinute > 59)
-  {
-    actualMinute-=60;
-    actualHour++;
-    if(actualHour > 23)
-    {
-      actualHour=0;
-    }
-  }
-
-  //Uhrzeitausgabe am Seriellen Monitor (wenns ned richtig funktioniert: Hilfe beim suchen eines Fehlers)
-  Serial.print(actualHour);
-  Serial.print(":");
-  Serial.println(actualMinute);
-
-  //Uhrzeitanzeige an den LEDs (also an der Uhr)
-  haus();
-  minaus();
-
-  switch(actualHour)
-  {
-    case 0: for(int i=30; i<38; i++)  {pixels.setPixelColor(i, pixels.Color(0, 0, 0));} break;
-    
-    case 1: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 2: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut)); 
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  break;
-            
-    case 3: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));
-            pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut));  break;
-            
-    case 4: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));
-            pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut));
-            pixels.setPixelColor(33, pixels.Color(rott, gruent, blaut));  break;
-            
-    case 5: //haus();
-            pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  break;
-            
-    case 6: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 7: pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  break;
-            
-    case 8: pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut)); 
-            pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut));  break;
-            
-    case 9: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut)); 
-            pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut));
-            pixels.setPixelColor(33, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 10: //haus();
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  break;
-             
-    case 11: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 12: pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  
-              pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rot, gruent, blaut));  break;
-    
-    case 13: pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut)); 
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  
-              pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  break;
-             
-    case 14: pixels.setPixelColor(33, pixels.Color(rott, gruent, blaut)); 
-              pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut)); 
-            pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  
-              pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 15: //haus();
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut));  break;
-             
-    case 16: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut));  break;
-             
-    case 17: pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 18: pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut));  
-              pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 19: pixels.setPixelColor(33, pixels.Color(rott, gruent, blaut)); 
-            pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut));  
-              pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut));  
-            pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut));  
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 20: //haus();
-             pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(37, pixels.Color(rott, gruent, blaut));  break;
-             
-    case 21: pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut)); 
-              pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(37, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 22: pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut)); 
-              pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut)); 
-              pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(37, pixels.Color(rott, gruent, blaut));  break;
-    
-    case 23: pixels.setPixelColor(32, pixels.Color(rott, gruent, blaut));  
-              pixels.setPixelColor(31, pixels.Color(rott, gruent, blaut)); 
-              pixels.setPixelColor(30, pixels.Color(rott, gruent, blaut)); 
-              pixels.setPixelColor(34, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(35, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(36, pixels.Color(rott, gruent, blaut)); 
-             pixels.setPixelColor(37, pixels.Color(rott, gruent, blaut));  break;
-  }
-
-  switch(actualMinute)
-  {
-    case 0:   for(int i=15; i<30; i++)  {pixels.setPixelColor(i, pixels.Color(0, 0, 0));} break;
-    
-    case 1: pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 2: pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-
-    case 3: pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 4:pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 5: //minaus();
-            pixels.setPixelColor(19, pixels.Color(rot, gruen, blau));  break;
-            
-    case 6: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 7:pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 8:pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  
-          pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 9: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-          pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  
-          pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  
-          pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 10: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau));  break;
-             
-    case 11: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 12:pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 13: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 14: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 15: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau));  break;
-             
-    case 16: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 17: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 18: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 19: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 20: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau));  break;
-             
-    case 21: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 22: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 23: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 24: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 25: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau));  break;
-             
-    case 26: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 27: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 28: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 29: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 30: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau));  break;
-             
-    case 31: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 32: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 33: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 34: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 35: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau));  break;
-             
-    case 36: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 37: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 38: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 39: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 40: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau));  break;
-             
-    case 41: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 42: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 43: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 44: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 45: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau));  break;
-             
-    case 46: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 47: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-
-    case 48: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 49: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 50: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau));  break;
-             
-    case 51: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 52: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 53: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 54: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-    case 55: //minaus();
-             pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(29, pixels.Color(rot, gruen, blau));  break;
-             
-    case 56: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(29, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau));  break;
-    
-    case 57: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(29, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau));  break;
-    
-    case 58: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(29, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau));  break;
-    
-    case 59: pixels.setPixelColor(19, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(20, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(21, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(22, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(23, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(24, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(25, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(26, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(27, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(28, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(29, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(15, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(16, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(17, pixels.Color(rot, gruen, blau)); 
-             pixels.setPixelColor(18, pixels.Color(rot, gruen, blau));  break;
-    
-  }
-
-  portDISABLE_INTERRUPTS();
-  pixels.show();
-  portENABLE_INTERRUPTS();
-
-  boschschild();
-
-  delay(sectime);
-
-  //Sekundenanzeige
-  for(int i=0; i<15;i++)
-  {
-    pixels.setPixelColor(i, pixels.Color(rotgd, gruengd, blaugd));
-    portDISABLE_INTERRUPTS();
-    pixels.show();
-    portENABLE_INTERRUPTS();
-    delay(sectime);
+    pixels.setPixelColor(ilauf, pixels.Color(rwert, gwert, bwert));
   }
 }
